@@ -1,10 +1,15 @@
 <template>
   <view class="page">
     <view class="header">
-      <text class="badge">LIVE</text>
-      <view class="title-wrap">
-        <text class="title">精选直播间</text>
-        <text class="subtitle">实时讲解 · 即时下单</text>
+      <view class="header-left">
+        <text class="badge">LIVE</text>
+        <view class="title-wrap">
+          <text class="title">精选直播间</text>
+          <text class="subtitle">实时讲解 · 即时下单</text>
+        </view>
+      </view>
+      <view class="settings-entry" @click="openSettings">
+        <text class="settings-icon">⚙️</text>
       </view>
     </view>
 
@@ -22,42 +27,6 @@
         <text class="live-title">今日主推好物，限时优惠</text>
         <text class="live-desc">跟随主播讲解，点击下方商品即可快速下单</text>
       </view>
-    </view>
-
-    <view class="settings-card">
-      <view class="settings-header">
-        <view>
-          <text class="settings-title">直播配置</text>
-          <text class="settings-desc">修改直播播放地址与 WebSocket 连接</text>
-        </view>
-        <view class="status-pill" :class="{ online: socketOpen }">
-          {{ socketOpen ? '已连接' : '未连接' }}
-        </view>
-      </view>
-
-      <view class="form-field">
-        <text class="field-label">直播地址</text>
-        <input
-          v-model.trim="streamUrl"
-          class="field-input"
-          placeholder="请输入直播流地址，如 http://...m3u8"
-          placeholder-class="field-placeholder"
-        />
-      </view>
-
-      <view class="form-field">
-        <text class="field-label">WebSocket 地址</text>
-        <input
-          v-model.trim="websocketUrl"
-          class="field-input"
-          placeholder="请输入 WebSocket 地址，如 ws://..."
-          placeholder-class="field-placeholder"
-        />
-      </view>
-
-      <button class="apply-btn" type="primary" @click="applyConnectionSettings">
-        更新地址并连接
-      </button>
     </view>
 
     <view class="section">
@@ -148,26 +117,25 @@ export default {
     };
   },
   onLoad() {
-    this.connectWebSocket();
+    this.loadSettings();
+  },
+  onShow() {
+    this.loadSettings();
+    this.connectIfReady();
   },
   onUnload() {
     this.closeSocket();
   },
   methods: {
-    applyConnectionSettings() {
-      if (!this.streamUrl) {
-        uni.showToast({
-          title: '请填写直播地址',
-          icon: 'none',
-        });
-        return;
-      }
-
-      if (!this.websocketUrl) {
-        uni.showToast({
-          title: '请填写 WebSocket 地址',
-          icon: 'none',
-        });
+    loadSettings() {
+      const storedStream = uni.getStorageSync('streamUrl');
+      const storedWs = uni.getStorageSync('websocketUrl');
+      this.streamUrl = storedStream || 'http://localhost:8085/hls/test.m3u8';
+      this.websocketUrl = storedWs || 'ws://localhost:8080';
+    },
+    connectIfReady() {
+      if (!this.streamUrl || !this.websocketUrl) {
+        this.orderStatus = '请前往设置填写直播地址和 WebSocket';
         return;
       }
 
@@ -206,6 +174,11 @@ export default {
         this.socketOpen = false;
         this.orderStatus = '连接出错，请检查地址后重试';
         console.error('WebSocket连接出错', err);
+      });
+    },
+    openSettings() {
+      uni.navigateTo({
+        url: '/pages/settings/index',
       });
     },
     closeSocket() {
@@ -260,7 +233,13 @@ export default {
 .header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 18px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
 }
 
 .badge {
@@ -289,6 +268,22 @@ export default {
   font-size: 13px;
   color: #cbd5e1;
   margin-top: 4px;
+}
+
+.settings-entry {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e5e7eb;
+}
+
+.settings-icon {
+  font-size: 18px;
 }
 
 .player-card {
@@ -321,86 +316,6 @@ export default {
 .live-desc {
   font-size: 13px;
   color: #cbd5e1;
-}
-
-.settings-card {
-  margin-bottom: 18px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.settings-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.settings-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #f8fafc;
-}
-
-.settings-desc {
-  display: block;
-  margin-top: 4px;
-  font-size: 12px;
-  color: #cbd5e1;
-}
-
-.status-pill {
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  color: #facc15;
-  background: rgba(250, 204, 21, 0.12);
-  border: 1px solid rgba(250, 204, 21, 0.2);
-}
-
-.status-pill.online {
-  color: #22c55e;
-  background: rgba(34, 197, 94, 0.14);
-  border-color: rgba(34, 197, 94, 0.3);
-}
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.field-label {
-  font-size: 13px;
-  color: #e5e7eb;
-}
-
-.field-input {
-  width: 100%;
-  padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  color: #fff;
-  font-size: 14px;
-}
-
-.field-placeholder {
-  color: #9ca3af;
-}
-
-.apply-btn {
-  margin-top: 4px;
-  background: linear-gradient(90deg, #38bdf8, #6366f1);
-  color: #0b1220;
-  font-weight: 700;
-  border: none;
-  border-radius: 12px;
 }
 
 .section {
