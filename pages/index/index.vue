@@ -12,7 +12,7 @@
       <video
         id="rtmpVideo"
         class="player"
-        :src="'http://localhost:8085/hls/test.m3u8'"
+        :src="streamUrl"
         controls
         autoplay
         :enable-progress-gesture="false"
@@ -22,6 +22,42 @@
         <text class="live-title">今日主推好物，限时优惠</text>
         <text class="live-desc">跟随主播讲解，点击下方商品即可快速下单</text>
       </view>
+    </view>
+
+    <view class="settings-card">
+      <view class="settings-header">
+        <view>
+          <text class="settings-title">直播配置</text>
+          <text class="settings-desc">修改直播播放地址与 WebSocket 连接</text>
+        </view>
+        <view class="status-pill" :class="{ online: socketOpen }">
+          {{ socketOpen ? '已连接' : '未连接' }}
+        </view>
+      </view>
+
+      <view class="form-field">
+        <text class="field-label">直播地址</text>
+        <input
+          v-model.trim="streamUrl"
+          class="field-input"
+          placeholder="请输入直播流地址，如 http://...m3u8"
+          placeholder-class="field-placeholder"
+        />
+      </view>
+
+      <view class="form-field">
+        <text class="field-label">WebSocket 地址</text>
+        <input
+          v-model.trim="websocketUrl"
+          class="field-input"
+          placeholder="请输入 WebSocket 地址，如 ws://..."
+          placeholder-class="field-placeholder"
+        />
+      </view>
+
+      <button class="apply-btn" type="primary" @click="applyConnectionSettings">
+        更新地址并连接
+      </button>
     </view>
 
     <view class="section">
@@ -75,6 +111,9 @@ export default {
     return {
       orderStatus: '',
       socketOpen: false,
+      socketTask: null,
+      streamUrl: 'http://localhost:8085/hls/test.m3u8',
+      websocketUrl: 'ws://localhost:8080',
       selectedProduct: null,
       products: [
         {
@@ -111,17 +150,46 @@ export default {
   onLoad() {
     this.connectWebSocket();
   },
+  onUnload() {
+    this.closeSocket();
+  },
   methods: {
+    applyConnectionSettings() {
+      if (!this.streamUrl) {
+        uni.showToast({
+          title: '请填写直播地址',
+          icon: 'none',
+        });
+        return;
+      }
+
+      if (!this.websocketUrl) {
+        uni.showToast({
+          title: '请填写 WebSocket 地址',
+          icon: 'none',
+        });
+        return;
+      }
+
+      this.orderStatus = '正在连接直播服务...';
+      this.connectWebSocket();
+    },
     connectWebSocket() {
+      this.closeSocket();
+
+      const url = this.websocketUrl;
       const socketTask = uni.connectSocket({
-        url: 'ws://localhost:8080',
+        url,
         success: () => {
           console.log('WebSocket连接发起成功');
         },
       });
 
+      this.socketTask = socketTask;
+
       socketTask.onOpen(() => {
         this.socketOpen = true;
+        this.orderStatus = '已连接直播间，等待下单';
         console.log('WebSocket已打开');
       });
 
@@ -136,8 +204,18 @@ export default {
 
       socketTask.onError((err) => {
         this.socketOpen = false;
+        this.orderStatus = '连接出错，请检查地址后重试';
         console.error('WebSocket连接出错', err);
       });
+    },
+    closeSocket() {
+      if (this.socketTask) {
+        this.socketTask.close({
+          code: 1000,
+          reason: 'reconnect',
+        });
+        this.socketTask = null;
+      }
     },
     selectProduct(product) {
       this.selectedProduct = product;
@@ -152,8 +230,8 @@ export default {
       }
 
       const orderInfo = `商品ID: ${this.selectedProduct.id}`;
-      if (this.socketOpen) {
-        uni.sendSocketMessage({
+      if (this.socketOpen && this.socketTask) {
+        this.socketTask.send({
           data: orderInfo,
           success: () => {
             this.orderStatus = `${this.selectedProduct.name} 下单成功，等待确认...`;
@@ -243,6 +321,86 @@ export default {
 .live-desc {
   font-size: 13px;
   color: #cbd5e1;
+}
+
+.settings-card {
+  margin-bottom: 18px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.settings-desc {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.status-pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: #facc15;
+  background: rgba(250, 204, 21, 0.12);
+  border: 1px solid rgba(250, 204, 21, 0.2);
+}
+
+.status-pill.online {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: 13px;
+  color: #e5e7eb;
+}
+
+.field-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.field-placeholder {
+  color: #9ca3af;
+}
+
+.apply-btn {
+  margin-top: 4px;
+  background: linear-gradient(90deg, #38bdf8, #6366f1);
+  color: #0b1220;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
 }
 
 .section {
