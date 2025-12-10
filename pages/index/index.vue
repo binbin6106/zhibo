@@ -58,9 +58,31 @@
       </button>
     </view>
 
-    <view class="status-card" v-if="orderStatus">
+    <view class="status-card" v-if="orderStatus || hasManufactureProgress">
       <view class="status-title">订单状态</view>
       <text class="status-text">{{ orderStatus }}</text>
+
+      <view v-if="hasManufactureProgress" class="progress-card">
+        <view class="progress-header">
+          <text class="progress-title">制造进度</text>
+          <text class="progress-percent">{{ manufacturePercent }}%</text>
+        </view>
+        <progress :percent="manufacturePercent" active stroke-width="8" activeColor="#22c55e" />
+        <view class="progress-steps">
+          <view
+            v-for="(stage, index) in manufactureStages"
+            :key="stage.title"
+            class="progress-step"
+          >
+            <view
+              class="step-dot"
+              :class="{ active: index <= manufactureStage }"
+            />
+            <text class="step-label">{{ stage.title }}</text>
+          </view>
+        </view>
+        <text class="progress-tip">当前阶段：{{ currentStageTitle }}</text>
+      </view>
     </view>
   </view>
 </template>
@@ -70,6 +92,20 @@ export default {
   data() {
     return {
       orderStatus: '',
+      manufactureStage: -1,
+      manufactureStages: [
+        { title: '订单创建' },
+        { title: '订单确认' },
+        { title: '排产调度' },
+        { title: '原料准备' },
+        { title: '设备就绪' },
+        { title: '制造中' },
+        { title: '质量检测' },
+        { title: '打包装箱' },
+        { title: '出库准备' },
+        { title: '物流交接' },
+        { title: '完成' },
+      ],
       socketOpen: false,
       socketTask: null,
       streamUrl: 'http://localhost:8080/live/livestream.flv',
@@ -87,6 +123,24 @@ export default {
         }
       ],
     };
+  },
+  computed: {
+    hasManufactureProgress() {
+      return this.manufactureStage >= 0;
+    },
+    manufacturePercent() {
+      const maxStage = this.manufactureStages.length - 1;
+      if (maxStage <= 0 || this.manufactureStage < 0) {
+        return 0;
+      }
+      return Math.round((this.manufactureStage / maxStage) * 100);
+    },
+    currentStageTitle() {
+      if (this.manufactureStage < 0 || this.manufactureStage >= this.manufactureStages.length) {
+        return '等待进度更新';
+      }
+      return this.manufactureStages[this.manufactureStage].title;
+    },
   },
   onLoad() {
     this.loadSettings();
@@ -137,6 +191,14 @@ export default {
       });
 
       socketTask.onMessage((message) => {
+        const stageNumber = Number(message.data);
+
+        if (!Number.isNaN(stageNumber) && stageNumber >= 0 && stageNumber <= 10) {
+          this.manufactureStage = stageNumber;
+          this.orderStatus = `制造进度更新：第 ${stageNumber}/10 阶段`;
+          return;
+        }
+
         this.orderStatus = message.data;
       });
 
@@ -177,12 +239,30 @@ export default {
         return;
       }
 
-      const orderInfo = `商品ID: ${this.selectedProduct.id}`;
+      const { name, price, id } = this.selectedProduct;
+      const orderInfo = `商品：${name}\n价格：¥${price}\n确认下单吗？`;
+
+      uni.showModal({
+        title: '确认下单',
+        content: orderInfo,
+        confirmText: '确认下单',
+        cancelText: '再想想',
+        success: (res) => {
+          if (res.confirm) {
+            this.submitOrder(id, name);
+          }
+        },
+      });
+    },
+    submitOrder(productId, productName) {
+      const orderInfo = `商品ID: ${productId}`;
+      this.manufactureStage = -1;
+
       if (this.socketOpen && this.socketTask) {
         this.socketTask.send({
           data: orderInfo,
           success: () => {
-            this.orderStatus = `${this.selectedProduct.name} 下单成功，等待确认...`;
+            this.orderStatus = `${productName} 下单成功，等待确认...`;
           },
           fail: () => {
             this.orderStatus = '下单失败，请稍后重试';
@@ -436,5 +516,71 @@ export default {
 .status-text {
   font-size: 15px;
   color: #f1f5f9;
+}
+
+.progress-card {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progress-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #c7d2fe;
+}
+
+.progress-percent {
+  font-size: 14px;
+  color: #22c55e;
+}
+
+.progress-steps {
+  display: flex;
+  overflow-x: auto;
+  gap: 12px;
+  padding-bottom: 4px;
+}
+
+.progress-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.step-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.step-dot.active {
+  background: #22c55e;
+  border-color: #16a34a;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
+}
+
+.step-label {
+  font-size: 12px;
+  color: #e5e7eb;
+  white-space: nowrap;
+}
+
+.progress-tip {
+  font-size: 12px;
+  color: #a5b4fc;
 }
 </style>
