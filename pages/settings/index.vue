@@ -14,7 +14,7 @@
         <input
           v-model.trim="streamUrl"
           class="field-input"
-          placeholder="请输入直播流地址，如 http://...m3u8"
+          placeholder="请输入直播流地址，如 rtmp://..."
           placeholder-class="field-placeholder"
         />
       </view>
@@ -54,7 +54,7 @@ export default {
     loadSettings() {
       const storedStream = uni.getStorageSync(STREAM_KEY);
       const storedWs = uni.getStorageSync(WS_KEY);
-      this.streamUrl = storedStream || 'http://localhost:8085/hls/test.m3u8';
+      this.streamUrl = storedStream || 'rtmp://localhost/live/stream';
       this.websocketUrl = storedWs || 'ws://localhost:8080';
     },
     saveSettings() {
