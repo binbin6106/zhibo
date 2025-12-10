@@ -4,8 +4,8 @@
       <view class="header-left">
         <text class="badge">LIVE</text>
         <view class="title-wrap">
-          <text class="title">精选直播间</text>
-          <text class="subtitle">实时讲解 · 即时下单</text>
+          <text class="title">智能装备赛道</text>
+          <text class="subtitle">智能制造 · 即时下单</text>
         </view>
       </view>
       <view class="settings-entry" @click="openSettings">
@@ -24,15 +24,15 @@
         object-fit="contain"
       ></video>
       <view class="live-info">
-        <text class="live-title">今日主推好物，限时优惠</text>
-        <text class="live-desc">跟随主播讲解，点击下方商品即可快速下单</text>
+        <text class="live-title">基于电商订单驱动的柔性智能制造系统</text>
+        <text class="live-desc">第十八届山东省职业院校技能大赛</text>
       </view>
     </view>
 
     <view class="section">
       <view class="section-title">
         <text class="dot" />
-        <text>商品精选</text>
+        <text>商品精选</text> 
       </view>
       <scroll-view class="product-list" scroll-x>
         <view
@@ -87,32 +87,11 @@ export default {
       products: [
         {
           id: 'P-1001',
-          name: '无线蓝牙耳机',
+          name: '光伏板',
           price: 199,
-          tag: '人气爆款',
-          image: 'https://img.alicdn.com/imgextra/i1/2206689600457/O1CN01EG38FV1Moq2xG3pVq_!!2206689600457-0-lubanu-s.jpg',
-        },
-        {
-          id: 'P-1002',
-          name: '智能手表',
-          price: 329,
-          tag: '限时直降',
-          image: 'https://img.alicdn.com/imgextra/i3/2207021320110/O1CN01ev4Z4P1x7lHrT7cwQ_!!2207021320110-0-lubanu-s.jpg',
-        },
-        {
-          id: 'P-1003',
-          name: '迷你榨汁杯',
-          price: 149,
-          tag: '直播专享',
-          image: 'https://img.alicdn.com/imgextra/i1/3526327762/O1CN01ms05591Id0a8ggxqv_!!0-item_pic.jpg',
-        },
-        {
-          id: 'P-1004',
-          name: '高颜值保温杯',
-          price: 89,
-          tag: '礼盒装',
-          image: 'https://img.alicdn.com/imgextra/i3/2208688884926/O1CN01x6DShv1uJEg5udweT_!!0-item_pic.jpg',
-        },
+          tag: 'guangfu',
+          image: 'https://q4.itc.cn/images01/20241223/084b3f28c95647c896a31f81f15e5901.png',
+        }
       ],
     };
   },
