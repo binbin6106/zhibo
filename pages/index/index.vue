@@ -14,15 +14,16 @@
     </view>
 
     <view class="player-card">
-      <video
-        id="rtmpVideo"
+      <live-player
+        id="webrtcPlayer"
         class="player"
         :src="streamUrl"
-        controls
+        mode="RTC"
         autoplay
-        :enable-progress-gesture="false"
         object-fit="contain"
-      ></video>
+        @statechange="handlePlayerStateChange"
+        @error="handlePlayerError"
+      />
       <view class="live-info">
         <text class="live-title">基于电商订单驱动的柔性智能制造系统</text>
         <text class="live-desc">第十八届山东省职业院校技能大赛</text>
@@ -81,7 +82,7 @@ export default {
       orderStatus: '',
       socketOpen: false,
       socketTask: null,
-      streamUrl: 'http://localhost:8085/hls/test.m3u8',
+      streamUrl: 'webrtc://localhost/live/stream',
       websocketUrl: 'ws://localhost:8080',
       selectedProduct: null,
       products: [
@@ -109,7 +110,7 @@ export default {
     loadSettings() {
       const storedStream = uni.getStorageSync('streamUrl');
       const storedWs = uni.getStorageSync('websocketUrl');
-      this.streamUrl = storedStream || 'http://localhost:8085/hls/test.m3u8';
+      this.streamUrl = storedStream || 'webrtc://localhost/live/stream';
       this.websocketUrl = storedWs || 'ws://localhost:8080';
     },
     connectIfReady() {
@@ -118,7 +119,7 @@ export default {
         return;
       }
 
-      this.orderStatus = '正在连接直播服务...';
+      this.orderStatus = '正在连接直播服务 (WebRTC)...';
       this.connectWebSocket();
     },
     connectWebSocket() {
@@ -195,6 +196,13 @@ export default {
       } else {
         this.orderStatus = '连接未建立，无法下单';
       }
+    },
+    handlePlayerStateChange(e) {
+      console.log('WebRTC 播放状态变更：', e);
+    },
+    handlePlayerError(err) {
+      console.error('WebRTC 播放出错：', err);
+      this.orderStatus = '直播播放出现问题，请检查 WebRTC 地址';
     },
   },
 };
