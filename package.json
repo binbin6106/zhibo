@@ -1,1 +1,6 @@
-{}
+{
+  "dependencies": {
+    "flv.js": "^1.6.2",
+    "mpegts.js": "^1.8.0"
+  }
+}
