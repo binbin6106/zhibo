@@ -14,22 +14,12 @@
     </view>
 
     <view class="player-card">
-      <live-player
-        id="rtmpPlayer"
-        class="player"
-        :src="streamUrl"
-        mode="live"
-        autoplay
-        object-fit="contain"
-        @statechange="handlePlayerStateChange"
-        @error="handlePlayerError"
-      />
+	  <yb-video ref="video" :src="streamUrl" height="300px" autoplay/>
       <view class="live-info">
         <text class="live-title">基于电商订单驱动的柔性智能制造系统</text>
         <text class="live-desc">第十八届山东省职业院校技能大赛</text>
       </view>
     </view>
-
     <view class="section">
       <view class="section-title">
         <text class="dot" />
@@ -82,7 +72,9 @@ export default {
       orderStatus: '',
       socketOpen: false,
       socketTask: null,
-      streamUrl: 'rtmp://localhost/live/stream',
+      streamUrl: 'http://localhost:8080/live/livestream.flv',
+	  // streamUrl: 'http://localhost:8080/live/livestream.flv',
+	  
       websocketUrl: 'ws://localhost:8080',
       selectedProduct: null,
       products: [
@@ -107,10 +99,13 @@ export default {
     this.closeSocket();
   },
   methods: {
+	  toggle () {
+	  	this.$refs.video.toggle()
+	  },
     loadSettings() {
       const storedStream = uni.getStorageSync('streamUrl');
       const storedWs = uni.getStorageSync('websocketUrl');
-      this.streamUrl = storedStream || 'rtmp://localhost/live/stream';
+      this.streamUrl = storedStream || 'http://localhost:8080/live/livestream.flv';
       this.websocketUrl = storedWs || 'ws://localhost:8080';
     },
     connectIfReady() {
